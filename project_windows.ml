@@ -68,10 +68,35 @@ module Solver1 : Solver = struct
 	string_of_int (count_larger 0 data (List.tl (List.tl (List.tl data))))
 end
 
+module Solver2 : Solver = struct
+  let rec move part (depth, hor, aim) = function
+	| [] -> (depth, hor, aim)
+	| (ins::dis::[])::t -> 
+	  let dis = int_of_string dis in (match ins with
+		| "down" -> if part = 1 then move part (depth + dis, hor, aim) t else move part (depth, hor, aim + dis)	t
+		| "up" -> if part = 1 then move part (depth - dis, hor, aim) t else move part (depth, hor, aim - dis) t	
+		| "forward" -> if part = 1 then move part (depth, hor + dis, aim) t else 
+		  move part (depth + aim*dis, hor + dis, aim) t
+		| _ -> failwith "Invalid instruction"
+		)
+	| _ -> failwith "List was not of the correct form"
+
+  let naloga1 data =
+	let data = List.map (String.split_on_char ' ') (List.lines data) in
+	let (d, h, _) = move 1 (0, 0, 0) data in
+	string_of_int (d * h)
+
+  let naloga2 data _part1 = 
+	let data = List.map (String.split_on_char ' ') (List.lines data) in
+	let (d, h, _) = move 2 (0, 0, 0) data in
+	string_of_int (d * h)
+end
+
 (* Poženemo zadevo *)
 let choose_solver : string -> (module Solver) = function
   | "0" -> (module Solver0)
   | "1" -> (module Solver1)
+  | "2" -> (module Solver2)
   | _ -> failwith "Ni še rešeno"
 
 let main () =
