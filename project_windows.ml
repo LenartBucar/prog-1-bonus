@@ -92,11 +92,48 @@ module Solver2 : Solver = struct
 	string_of_int (d * h)
 end
 
+module Solver3 : Solver = struct
+  let matches pos bit number = 
+    number.[pos] = bit
+	
+  let count acc value =
+    if value then acc + 1 else acc
+  
+  let most_common inv pos (numbers: string list) = 
+    let len = List.length numbers in
+	let num = List.fold_left count 0 (List.map (matches pos '1') numbers) in
+	let rem = len - num in
+	let out = if rem = num then '1' else if num > rem then '1' else '0' in
+	if inv then (if out = '1' then '0' else '1') else out
+	
+  let invert number = 
+    String.init (String.length number) (fun x -> if number.[x] = '1' then '0' else '1')
+  
+  let naloga1 data =
+    let data = List.lines data in
+	let len = String.length (List.nth data 0) in
+	let num = String.init len (fun x -> most_common false x data) in
+	num ^ " - " ^ (invert num)
+	
+  let rec reduce inv pos = function
+    | x::[] -> x
+	| l -> let common = most_common inv pos l in
+		reduce inv (pos + 1) (List.filter (matches pos common) l)
+	
+	
+  let naloga2 data _part1 = 
+	let data = List.lines data in
+	let num_1 = reduce false 0 data in
+	let num_2 = reduce true	0 data in
+	num_1 ^ " - " ^ num_2
+end
+
 (* Poženemo zadevo *)
 let choose_solver : string -> (module Solver) = function
   | "0" -> (module Solver0)
   | "1" -> (module Solver1)
   | "2" -> (module Solver2)
+  | "3" -> (module Solver3)
   | _ -> failwith "Ni še rešeno"
 
 let main () =
