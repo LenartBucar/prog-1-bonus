@@ -19,6 +19,9 @@ module List = struct
     sum' 0 l
 
   let lines = String.split_on_char '\n'
+  
+  let max l =
+    List.fold_left (fun acc x -> max acc x) (-1) l
 end
 
 module type Solver = sig
@@ -128,12 +131,92 @@ module Solver3 : Solver = struct
 	num_1 ^ " - " ^ num_2
 end
 
+
+module Solver4 : Solver = struct
+  type board = int list list
+
+  (* generates board list from a suitable string *)
+  let rec make_tables new_table (data_out : board list) = function
+	| [] -> data_out
+    | ""::t -> make_tables true data_out t
+	| line::t -> let numbers = List.int_list ((String.split_on_char ' ' line) |> List.filter (fun s -> s <> "")) in
+				 let data_out = if new_table then [numbers]::data_out else 
+				   let dh::dt = data_out in 
+				   (numbers::dh)::dt
+				 in
+				 make_tables false data_out t
+
+  (* Checks if the table has either a complete row or a complete column on -1s *)
+  let has_won table = 
+	let rec transpose = function
+	  | [] -> []
+	  | []::xss -> transpose xss
+	  | (x::xs) :: xss -> (x :: List.map List.hd xss) :: transpose (xs :: List.map List.tl xss)
+	in
+	
+	let check_row row = 
+	  List.for_all (fun x -> x = -1) row
+	in
+	
+	let check_rows table = 
+	  List.exists check_row table
+	in
+	check_rows table || check_rows (transpose table)
+	
+  let evaluate table = 
+    List.fold_left (+) 0 (List.map (fun row -> List.fold_left (fun x y -> if y = -1 then x else x + y) 0 row) table)
+	
+  (* checks if the table has a given number, if yes, replaces it with a -1 *)
+  let check_number num table =
+	let check_row num row= 
+	  List.map (fun x -> if x = num then -1 else x) row
+	in
+	List.map (check_row num) table
+	
+  let guess_number num tables = 
+    List.map (check_number num) tables
+	
+  let rec guess_numbers nums tables = (* PART 1 *)
+    match nums with
+	| [] -> failwith "Ran out of numbers"
+	| num::t -> let tables = guess_number num tables in
+				let m = List.max (List.map (fun t -> if has_won t then evaluate t else -1) tables) in
+				if m <> -1 then num * m else guess_numbers t tables
+				
+  let rec eliminate_numbers nums tables = (* PART 2 *)
+    match nums with
+	| [] -> failwith "Ran out of numbers"
+	| num::t -> let tables = guess_number num tables in
+				if (List.length tables) = 1 && has_won (List.nth tables 0) then num * evaluate (List.nth tables 0) else
+				eliminate_numbers t (List.filter (fun x -> not (has_won x)) tables)
+				(*
+				let m = List.max (List.map (fun t -> if has_won t then evaluate t else -1) tables) in
+				if m <> -1 then num * m else guess_numbers t tables
+				*)
+	
+  
+  let naloga1 data = 
+    let numbers::data = List.lines data in
+	let numbers = List.int_list (String.split_on_char ',' numbers) in
+	let tables = make_tables true [] (List.rev data) in (* build the tables backwards *)
+	string_of_int (guess_numbers numbers tables)
+
+
+  let naloga2 data _part1 = 
+	let numbers::data = List.lines data in
+	let numbers = List.int_list (String.split_on_char ',' numbers) in
+	let tables = make_tables true [] (List.rev data) in (* build the tables backwards *)
+	string_of_int (eliminate_numbers numbers tables)
+end
+
+
 (* Poženemo zadevo *)
 let choose_solver : string -> (module Solver) = function
   | "0" -> (module Solver0)
   | "1" -> (module Solver1)
   | "2" -> (module Solver2)
   | "3" -> (module Solver3)
+  | "4" -> (module Solver4)
   | _ -> failwith "Ni še rešeno"
 
 let main () =
