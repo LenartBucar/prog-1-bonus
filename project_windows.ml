@@ -210,6 +210,60 @@ module Solver4 : Solver = struct
 end
 
 
+module Solver5 : Solver = struct
+  type point = int*int
+  type line = point*point
+  
+  let sign = function
+    | 0 -> 0
+    | n -> n / abs(n)
+
+  
+  let parse data : line list = 
+	let lines = List.lines data in
+	let parseline l =
+	  let [a;_;b] = String.split_on_char ' ' l in
+	  let [x1;y1] = String.split_on_char ',' a in
+	  let [x2;y2] = String.split_on_char ',' b in
+	  ((int_of_string x1, int_of_string y1), (int_of_string x2, int_of_string y2))
+	in
+	List.map parseline lines
+  
+  let rec gen_points (diag : bool) (line : line) : point list =
+	match line with
+	| x, y when x = y -> [x]
+	| (a, b), (c, d) when b = d -> (a, b)::(gen_points diag ((a + sign (c - a), b), (c, b)))
+	| (a, b), (c, d) when a = c -> (a, b)::(gen_points diag ((a, b + sign (d - b)), (c, d)))
+	| (a, b), (c, d) when diag -> (a, b)::(gen_points diag ((a + sign (c - a), b + sign (d - b)), (c, d)))
+	| _ -> []
+	
+  let visit_points visited (diag : bool) (line : line) : unit = 
+    let update_counter x = 
+      if Hashtbl.mem visited x then
+        let current_count = Hashtbl.find visited x in
+        Hashtbl.replace visited x (current_count + 1)
+      else
+        Hashtbl.replace visited x 1
+      in
+	List.iter update_counter (gen_points diag line)
+    
+
+  let naloga1 data = 
+	let lines = parse data in
+	let visited = Hashtbl.create 10000 in
+	List.iter (visit_points visited false) lines;
+	Hashtbl.filter_map_inplace (fun k v -> if v > 1 then Some v else None) visited;
+	string_of_int (Hashtbl.length visited)
+
+  let naloga2 data _part1 = 
+	let lines = parse data in
+	let visited = Hashtbl.create 10000 in
+	List.iter (visit_points visited true) lines;
+	Hashtbl.filter_map_inplace (fun k v -> if v > 1 then Some v else None) visited;
+	string_of_int (Hashtbl.length visited)
+end
+
+
 (* Poženemo zadevo *)
 let choose_solver : string -> (module Solver) = function
   | "0" -> (module Solver0)
@@ -217,6 +271,7 @@ let choose_solver : string -> (module Solver) = function
   | "2" -> (module Solver2)
   | "3" -> (module Solver3)
   | "4" -> (module Solver4)
+  | "5" -> (module Solver5)
   | _ -> failwith "Ni še rešeno"
 
 let main () =
