@@ -263,6 +263,28 @@ module Solver5 : Solver = struct
 	string_of_int (Hashtbl.length visited)
 end
 
+module Solver6 : Solver = struct
+  let parse data =
+    List.int_list (String.split_on_char ',' data)
+	
+  let get_fish data = 
+    let count d data = 
+	  List.length (List.filter (fun x -> x = d) data)
+	in
+  
+    List.init 9 (fun x -> count x data)
+	
+  let rec step data = function
+	| 0 -> (List.fold_left (+) 0 (List.tl data))
+    | n -> step (List.init 10 (fun x -> (List.nth data ((x + 1) mod 9)) + if x = 6 then List.nth data 0 else 0)) (n-1)
+
+  let naloga1 data = 
+	string_of_int (step (get_fish (parse data)) 80)
+
+  let naloga2 data _part1 = 
+    string_of_int (step (get_fish (parse data)) 256)
+end
+
 
 (* Poženemo zadevo *)
 let choose_solver : string -> (module Solver) = function
@@ -272,6 +294,7 @@ let choose_solver : string -> (module Solver) = function
   | "3" -> (module Solver3)
   | "4" -> (module Solver4)
   | "5" -> (module Solver5)
+  | "6" -> (module Solver6)
   | _ -> failwith "Ni še rešeno"
 
 let main () =
