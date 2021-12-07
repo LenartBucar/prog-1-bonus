@@ -286,6 +286,25 @@ module Solver6 : Solver = struct
 end
 
 
+module Solver7 : Solver = struct
+  let parse data =
+    List.int_list (String.split_on_char ',' data)
+	
+  let rec calculate_fuel pos fin min fuel crabs = 
+    if pos = fin then min else
+    let dis = List.fold_left (+) 0 (List.map (fun f -> fuel (abs (f - pos))) crabs)
+	in
+	let min = if dis < min then dis else min in
+	calculate_fuel (pos + 1) fin min fuel crabs
+
+  let naloga1 data = 
+    string_of_int (calculate_fuel 0 1000 max_int (fun x -> x) (parse data))
+
+  let naloga2 data _part1 = 
+    string_of_int (calculate_fuel 0 1000 max_int (fun x -> (x * (x+1))/2) (parse data))
+end
+
+
 (* Poženemo zadevo *)
 let choose_solver : string -> (module Solver) = function
   | "0" -> (module Solver0)
@@ -295,6 +314,7 @@ let choose_solver : string -> (module Solver) = function
   | "4" -> (module Solver4)
   | "5" -> (module Solver5)
   | "6" -> (module Solver6)
+  | "7" -> (module Solver7)
   | _ -> failwith "Ni še rešeno"
 
 let main () =
