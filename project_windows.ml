@@ -305,6 +305,25 @@ module Solver7 : Solver = struct
 end
 
 
+module Solver8 : Solver = struct
+  let parse data =
+    List.map (fun x -> let _::t = x in t) (List.map (String.split_on_char ' ') (List.map (fun x -> List.nth x 1) (List.map (String.split_on_char '|' ) (List.lines data))))
+
+  let naloga1 data = 
+	let is_unique c x = 
+	  let is_u = if String.length x = 2 || String.length x = 3 || String.length x = 4 || String.length x = 7 then 1 else 0
+	  in
+	  Printf.printf "Is %s unique? %d\n" x is_u;
+	  c + is_u
+	in
+	let count_unique c lst = 
+	  c + (List.fold_left is_unique 0 lst)
+	in
+	string_of_int (List.fold_left count_unique 0 (parse data))
+
+  let naloga2 data _part1 = ""
+end
+
 (* Poženemo zadevo *)
 let choose_solver : string -> (module Solver) = function
   | "0" -> (module Solver0)
@@ -315,6 +334,7 @@ let choose_solver : string -> (module Solver) = function
   | "5" -> (module Solver5)
   | "6" -> (module Solver6)
   | "7" -> (module Solver7)
+  | "8" -> (module Solver8)
   | _ -> failwith "Ni še rešeno"
 
 let main () =
