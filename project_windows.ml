@@ -136,7 +136,7 @@ module Solver4 : Solver = struct
   type board = int list list
 
   (* generates board list from a suitable string *)
-  let rec make_tables new_table (data_out : board list) = function
+  let[@warning "-8"] rec make_tables new_table (data_out : board list) = function
 	| [] -> data_out
     | ""::t -> make_tables true data_out t
 	| line::t -> let numbers = List.int_list ((String.split_on_char ' ' line) |> List.filter (fun s -> s <> "")) in
@@ -196,13 +196,13 @@ module Solver4 : Solver = struct
 	
   
   let naloga1 data = 
-    let numbers::data = List.lines data in
+    let[@warning "-8"] numbers::data = List.lines data in
 	let numbers = List.int_list (String.split_on_char ',' numbers) in
 	let tables = make_tables true [] (List.rev data) in (* build the tables backwards *)
 	string_of_int (guess_numbers numbers tables)
 
 
-  let naloga2 data _part1 = 
+  let[@warning "-8"] naloga2 data _part1 = 
 	let numbers::data = List.lines data in
 	let numbers = List.int_list (String.split_on_char ',' numbers) in
 	let tables = make_tables true [] (List.rev data) in (* build the tables backwards *)
@@ -219,7 +219,7 @@ module Solver5 : Solver = struct
     | n -> n / abs(n)
 
   
-  let parse data : line list = 
+  let[@warning "-8"] parse data : line list = 
 	let lines = List.lines data in
 	let parseline l =
 	  let [a;_;b] = String.split_on_char ' ' l in
@@ -306,20 +306,49 @@ end
 
 
 module Solver8 : Solver = struct
-  let parse data =
+  let[@warning "-8"] parse data =
     List.map (fun x -> let _::t = x in t) (List.map (String.split_on_char ' ') (List.map (fun x -> List.nth x 1) (List.map (String.split_on_char '|' ) (List.lines data))))
 
   let naloga1 data = 
 	let is_unique c x = 
 	  let is_u = if String.length x = 2 || String.length x = 3 || String.length x = 4 || String.length x = 7 then 1 else 0
 	  in
-	  Printf.printf "Is %s unique? %d\n" x is_u;
 	  c + is_u
 	in
 	let count_unique c lst = 
 	  c + (List.fold_left is_unique 0 lst)
 	in
 	string_of_int (List.fold_left count_unique 0 (parse data))
+
+  let naloga2 data _part1 = ""
+end
+
+module Solver9 : Solver = struct
+  let string_to_list s =
+  let rec exp i l =
+    if i < 0 then l else exp (i - 1) (s.[i] :: l) in
+  exp (String.length s - 1) []
+
+  let parse data = 
+    List.map (fun x -> List.map (fun t -> int_of_char t - 48) (string_to_list x)) (List.lines data)
+
+  let is_low x y map =
+    let h = List.length map - 1 in
+	let w = List.length (List.nth map 0) - 1 in
+	let u = if 0 < x then List.nth (List.nth map (x-1)) y else max_int in
+	let d = if x < h then List.nth (List.nth map (x+1)) y else max_int in
+	let l = if 0 < y then List.nth (List.nth map x) (y - 1) else max_int in
+	let r = if y < w then List.nth (List.nth map x) (y + 1) else max_int in
+	let p = List.nth (List.nth map x) y in
+	if p < u && p < d && p < l && p < r then p + 1 else 0
+	
+  let calculate map = 
+    let h = List.length map in
+	let w = List.length (List.nth map 0) in
+	List.init h (fun x -> List.init w (fun y -> is_low x y map))
+
+  let naloga1 data = 
+    string_of_int (List.fold_left (+) 0 (List.map (List.fold_left (+) 0) (calculate (parse data))))
 
   let naloga2 data _part1 = ""
 end
@@ -335,6 +364,7 @@ let choose_solver : string -> (module Solver) = function
   | "6" -> (module Solver6)
   | "7" -> (module Solver7)
   | "8" -> (module Solver8)
+  | "9" -> (module Solver9)
   | _ -> failwith "Ni še rešeno"
 
 let main () =
