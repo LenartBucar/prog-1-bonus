@@ -353,6 +353,151 @@ module Solver9 : Solver = struct
   let naloga2 data _part1 = ""
 end
 
+module Solver10 : Solver = struct
+  let opening = "([{<"
+  let closing = ")]}>"
+  let close = function
+    | '(' -> ')'
+    | '[' -> ']'
+    | '{' -> '}'
+    | '<' -> '>'
+    | _ -> failwith "Unknown token"
+	
+  let score = function
+    | '(' -> 1
+    | '[' -> 2
+    | '{' -> 3
+    | '<' -> 4
+    | _ -> failwith "Unknown token"
+  
+  let string_to_list s = List.init (String.length s) (String.get s)
+
+  let parse data = 
+    List.map string_to_list (List.lines data)
+	
+  let check_expression exp =
+    let rec chk stc = function
+	  | [] -> stc
+	  | p :: t -> if String.contains opening p then chk (p::stc) t else
+	    (
+		match stc with
+		  | h::s when close h = p -> chk s t
+		  | _ -> [p]
+		)
+    in
+	chk [] exp
+	
+  let evaluate_1 = function
+	| x::[] when String.contains closing x -> 
+	  (
+	  match x with
+	    | ')' -> 3
+		| ']' -> 57
+		| '}' -> 1197
+		| '>' -> 25137
+		| _ -> failwith "Unknown token"
+	  )
+	| _ -> 0
+	
+  let evaluate_2 exp = 
+    if evaluate_1 exp <> 0 then 0 else
+	List.fold_left (fun acc x -> 5*acc + score x) 0 exp
+	
+  
+  let naloga1 data = 
+    let data = parse data in
+	List.fold_left (+) 0 (List.map (fun x -> evaluate_1 (check_expression x)) data) |> string_of_int
+
+  let naloga2 data _part1 = 
+    let data = parse data in
+	let rem = List.filter (fun x -> x <> 0) (List.map (fun x -> evaluate_2 (check_expression x)) data) in
+	List.nth (List.sort (Int.compare) rem) (List.length rem / 2) |> string_of_int
+end
+
+module Solver11 : Solver = struct
+  type octo = 
+    | Charging of int
+	| Flashed
+	
+  let string_to_list s = List.init (String.length s) (String.get s)
+  
+  let to_matrix data =
+    Array.init 10 (fun x -> 
+	  Array.init 10 (fun y ->
+	    List.nth (List.nth data x) y
+	  )
+	)
+	
+  let[@warning "-8"] print_matrix arr =
+    Array.iter (fun x -> 
+	  Array.iter (fun (Charging c) -> Printf.printf "%d" c) x; Printf.printf "\n"
+	) arr;
+	Printf.printf "\n"
+
+  let parse data = 
+    List.map (fun x -> List.map (fun t -> Charging (int_of_char t - 48)) (string_to_list x)) (List.lines data)
+	|> to_matrix
+	
+  let get_near (x, y) = 
+  List.filter (fun (x, y) -> 0 <= x && x < 10 && 0 <= y && y < 10)
+  [(x-1, y-1);
+   (x-1, y);
+   (x-1, y+1);
+   (x, y-1);
+   (x, y+1);
+   (x+1, y-1);
+   (x+1, y);
+   (x+1, y+1);]
+   
+  let rec flash arr (x, y) =
+    match arr.(x).(y) with
+	  | Flashed -> ()
+	  | Charging c -> if c < 9 then arr.(x).(y) <- Charging (c+1) else
+	    (arr.(x).(y) <- Flashed;
+		List.iter (flash arr) (get_near (x, y))
+		)
+		
+  let reset arr =
+    let flash_n = ref 0 in
+    Array.iteri (fun x line ->
+	  Array.iteri (fun y o ->
+	    match o with
+		  | Charging _ -> ()
+		  | Flashed -> (flash_n := !flash_n + 1;
+			arr.(x).(y) <- Charging 0
+			)
+	  
+	  ) line
+	) arr;
+	!flash_n
+  
+  let flash_all arr =
+    Array.iteri (fun x row ->
+	  Array.iteri (fun y o ->
+	    flash arr (x, y) 
+	  ) row
+	) arr;
+    reset arr
+
+  let naloga1 data = 
+    let data = parse data in
+	let flash_t = ref 0 in
+	for x = 0 to 99 do
+	  flash_t := !flash_t + flash_all data;
+	done;
+	string_of_int !flash_t
+
+  let naloga2 data _part1 = 
+    let data = parse data in
+    let n = ref 0 in
+    let continue = ref true in
+    while !continue do
+	  n := !n + 1;
+	  if flash_all data = 100 then continue := false else ()
+	done;
+	string_of_int !n
+end
+
 (* Poženemo zadevo *)
 let choose_solver : string -> (module Solver) = function
   | "0" -> (module Solver0)
@@ -365,6 +510,8 @@ let choose_solver : string -> (module Solver) = function
   | "7" -> (module Solver7)
   | "8" -> (module Solver8)
   | "9" -> (module Solver9)
+  | "10" -> (module Solver10)
+  | "11" -> (module Solver11)
   | _ -> failwith "Ni še rešeno"
 
 let main () =
